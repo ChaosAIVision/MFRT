@@ -41,10 +41,26 @@ Iterate on the original prompt (above) with a new prompt that will improve the r
 
 A common best practice in prompt optimization is to add guidelines and the most helpful few shot examples.
 
-Note: Make sure to include the variables from the original prompt, which are wrapped in either single brackets or double brackets (e.g.
-{var}). If you fail to include these variables, the LLM will not be able to access the required data.
-Do not add any single or double brackets around anything other than the variables from the original prompt. The only curly brackets that should be used are the ones that wrap the variables from the original prompt.
-Make sure to copy paste the exact return instructions from the original prompt. Do not add any brackets here.
+CRITICAL INSTRUCTIONS FOR FEW-SHOT EXAMPLES:
+- When adding few-shot examples to your improved prompt, you MUST include the ACTUAL example text from the training data shown above.
+- DO NOT create placeholder variables like {example1}, {example2}, {examples1}, {examples2}, or any similar placeholders for examples.
+- COPY the real input text verbatim from the "Data for baseline prompt" sections above into your few-shot examples.
+- Your few-shot examples should contain the complete, actual text that will be shown to the LLM, not placeholders.
+- Example of CORRECT format: "Article: Crosby scores 58th goal in dominant victory..." (actual text)
+- Example of INCORRECT format: "Article: {example1}" or "Article: {examples1}" (placeholder - DO NOT DO THIS)
+
+Note about template variables: Make sure to include the variables from the original prompt, which are wrapped in curly brackets (e.g.
+{var}, {input}, {question}). These are the ONLY curly brackets that should appear in your optimized prompt. If you fail to include these variables, the LLM will not be able to access the required data.
+Do not add any single or double brackets around anything other than the variables from the original prompt.
+
+CRITICAL: PRESERVE OUTPUT FORMAT FROM ORIGINAL PROMPT
+- You MUST copy the exact output format and return instructions from the original prompt.
+- DO NOT change the output schema, categories, or classification structure.
+- If the original prompt asks for binary output (True/False), your optimized prompt MUST also output True/False.
+- If the original prompt asks for specific categories, keep those exact categories - do NOT create new ones.
+- DO NOT add additional classification steps, confidence scores, or reasoning fields unless they were in the original prompt.
+- Example INCORRECT: Original asks for "True or False" → Optimized asks for "breaking_record/team_victory/individual_achievement" (WRONG!)
+- Example CORRECT: Original asks for "True or False" → Optimized asks for "True or False" (CORRECT!)
 
 YOUR NEW PROMPT:
 """

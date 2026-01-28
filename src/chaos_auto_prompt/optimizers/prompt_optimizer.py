@@ -174,6 +174,59 @@ class PromptLearningOptimizer:
         """Return unique {placeholders} that look like template vars."""
         return list({m.group(1) for m in _TEMPLATE_RE.finditer(prompt_content)})
 
+    def _auto_fill_example_placeholders(
+        self, prompt: str, dataset: pd.DataFrame
+    ) -> str:
+        """
+        Auto-fill any {exampleN} placeholders with actual training examples.
+
+        This is a fallback mechanism in case the meta-prompt generates placeholders
+        despite instructions not to. It scans for patterns like {example1}, {example2}
+        and replaces them with actual input text from the training dataset.
+
+        Args:
+            prompt: The optimized prompt that may contain placeholders
+            dataset: Training dataset to extract examples from
+
+        Returns:
+            Prompt with placeholders replaced by actual example text
+        """
+        # Detect placeholders like {example1}, {example2}, {examples1}, etc.
+        pattern = r'\{examples?(\d+)\}'
+        matches = re.findall(pattern, prompt)
+
+        if not matches:
+            return prompt  # No placeholders found
+
+        filled_prompt = prompt
+        input_column = None
+
+        # Find input column (look for common names)
+        for col in ['input', 'question', 'text', 'prompt']:
+            if col in dataset.columns:
+                input_column = col
+                break
+
+        if input_column is None:
+            # Use first column as fallback
+            input_column = dataset.columns[0]
+
+        # Replace each placeholder with actual example
+        for match in set(matches):  # Use set to avoid duplicate replacements
+            idx = int(match) - 1  # Convert to 0-indexed
+
+            if idx < len(dataset):
+                example_text = str(dataset.iloc[idx][input_column])
+                # Truncate if too long (prevent prompt bloat)
+                if len(example_text) > 500:
+                    example_text = example_text[:500] + "..."
+
+                # Replace both {example1} and {examples1} patterns
+                filled_prompt = filled_prompt.replace(f'{{example{match}}}', example_text)
+                filled_prompt = filled_prompt.replace(f'{{examples{match}}}', example_text)
+
+        return filled_prompt
+
     def _create_optimized_prompt(
         self, optimized_content: str
     ) -> Union[str, List[Dict[str, str]]]:
@@ -374,6 +427,20 @@ class PromptLearningOptimizer:
                     ruleset = response_text
                 else:
                     optimized_prompt_content = response_text
+
+                    # Auto-fill any remaining placeholders (safety net)
+                    import re
+                    placeholders_before = re.findall(r'\{examples?(\d+)\}', optimized_prompt_content)
+                    if placeholders_before:
+                        optimized_prompt_content = self._auto_fill_example_placeholders(
+                            optimized_prompt_content,
+                            dataset
+                        )
+                        if self.verbose:
+                            print(
+                                f"  ⚠️  Auto-filled {len(set(placeholders_before))} placeholder(s): "
+                                f"{set(placeholders_before)}"
+                            )
 
             except (ProviderError, OptimizationError) as e:
                 print(f"Batch {i + 1}/{len(batch_dataframes)}: Failed - {e}")
