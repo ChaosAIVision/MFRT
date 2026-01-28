@@ -65,6 +65,87 @@ CRITICAL: PRESERVE OUTPUT FORMAT FROM ORIGINAL PROMPT
 YOUR NEW PROMPT:
 """
 
+# Intent-aware meta-prompt template (3-phase system)
+INTENT_AWARE_META_PROMPT_TEMPLATE = """
+You are an expert in prompt optimization with deep understanding of user intent.
+
+PHASE 0: USER INTENT DEFINITION
+************* start user intent *************
+{intent_definition}
+************* end user intent *************
+
+The user has defined their classification concept as shown above. This is the foundation for all prompt optimization.
+Your optimized prompt MUST align with this specific intent definition.
+
+BELOW IS THE ORIGINAL BASELINE PROMPT
+************* start prompt *************
+
+{baseline_prompt}
+************* end prompt *************
+
+BELOW ARE THE EXAMPLES USING THE ABOVE PROMPT
+************* start example data *************
+
+{examples}
+************* end example data *************
+
+HERE ARE SOME ANNOTATIONS THAT MAY BE HELPFUL:
+{annotations}
+
+FINAL INSTRUCTIONS
+Iterate on the original prompt (above) with a new prompt that will improve the results, based on the USER'S INTENT DEFINITION and the examples/feedback above.
+
+CRITICAL: INTENT-GROUNDED OPTIMIZATION
+Your optimized prompt MUST:
+
+1. **Reference User Intent Explicitly**:
+   - Start your prompt by restating the user's definition of the concept
+   - Example: "Based on the definition: {concept} means {definition}"
+   - Make it clear what criteria determine True vs False
+
+2. **Use Intent Indicators**:
+   - Incorporate the positive_indicators from user's intent
+   - Incorporate the negative_indicators from user's intent
+   - Example: "Look for these indicators: {positive_indicators}"
+   - Example: "Avoid classifying if: {negative_indicators}"
+
+3. **Handle Boundary Cases**:
+   - Address the boundary_cases from user's intent
+   - Provide clear guidance on edge cases
+   - Example: "Note: {boundary_case_explanation}"
+
+4. **Ground Few-Shot Examples in Intent**:
+   - When adding few-shot examples, EXPLAIN why they match/don't match the user's intent
+   - Example: "This is True because it contains {positive_indicator} which matches our definition"
+   - DO NOT use placeholders like {{example1}} - use ACTUAL text from training data above
+
+5. **Align Classification Logic with Intent**:
+   - Decision criteria should directly reference user's definition
+   - Example: "Classify as True if the input matches the definition: {definition}"
+
+CRITICAL INSTRUCTIONS FOR FEW-SHOT EXAMPLES:
+- You MUST include the ACTUAL example text from the training data shown above
+- DO NOT create placeholder variables like {{example1}}, {{example2}}, {{examples1}}, {{examples2}}
+- COPY the real input text verbatim from the "Data for baseline prompt" sections above
+- For EACH example, explain how it aligns (or doesn't) with the user's intent
+- Example CORRECT format:
+  "Example 1 (True): 'Player scores 58th goal, breaking team record'
+   → This matches our definition because it contains 'record-breaking' (positive indicator)"
+- Example INCORRECT format:
+  "Example 1: {{example1}}" (DO NOT DO THIS!)
+
+PRESERVE OUTPUT FORMAT:
+- You MUST copy the exact output format from the original prompt
+- DO NOT change the output schema (if binary, keep binary; if categories, keep same categories)
+- If original asks for True/False, optimized MUST also ask for True/False
+
+PRESERVE TEMPLATE VARIABLES:
+- Keep all variables from original prompt wrapped in curly brackets: {{var}}, {{input}}, {{question}}
+- These are the ONLY curly brackets in your optimized prompt (besides few-shot example text)
+
+YOUR NEW INTENT-GROUNDED PROMPT:
+"""
+
 DEFAULT_CODING_AGENT_META_PROMPT_TEMPLATE = """
 You are an expert in coding agent prompt optimization.
 Your goal is to improve the dynamic ruleset that guides the coding agent.
@@ -270,6 +351,136 @@ class MetaPrompt:
                 pass
 
         return content
+
+    def construct_intent_aware_content(
+        self,
+        batch_df: pd.DataFrame,
+        prompt_to_optimize_content: str,
+        template_variables: List[str],
+        feedback_columns: List[str],
+        output_column: str,
+        intent: dict,
+        annotations: List[str] | None = None,
+    ) -> str:
+        """
+        Construct an intent-aware meta-prompt for optimization.
+
+        This method builds a meta-prompt that includes the user's intent definition,
+        ensuring the optimized prompt aligns with the user's specific criteria.
+
+        Args:
+            batch_df: DataFrame containing example data
+            prompt_to_optimize_content: The base prompt to optimize
+            template_variables: List of template variable names
+            feedback_columns: List of feedback column names
+            output_column: Name of output column
+            intent: Intent dictionary from IntentExtractor with:
+                - concept: str
+                - definition: str
+                - positive_indicators: List[str]
+                - negative_indicators: List[str]
+                - boundary_cases: List[str]
+                - confidence: float
+            annotations: Optional additional annotations
+
+        Returns:
+            Intent-aware meta-prompt string
+        """
+        # Use intent-aware template
+        content = INTENT_AWARE_META_PROMPT_TEMPLATE
+
+        # Format intent definition
+        intent_text = self._format_intent_definition(intent)
+        content = content.replace("{intent_definition}", intent_text)
+
+        # Insert baseline prompt
+        content = content.replace("{baseline_prompt}", prompt_to_optimize_content)
+
+        # Build examples section (same as construct_content)
+        examples = ""
+        for ind, row in batch_df.iterrows():
+            row_dict = row.to_dict()
+            output_value = row_dict[output_column]
+
+            # Sanitize output
+            if output_value is not None and isinstance(output_value, str):
+                output_value = output_value.replace(self.start_delim, " ").replace(
+                    self.end_delim, " "
+                )
+            else:
+                output_value = "None"
+
+            current_example = f"""
+                Example {str(ind)}
+
+                Data for baseline prompt: {[row_dict[temp_var] for temp_var in template_variables]}
+
+                LLM Output using baseline prompt: {output_value}
+
+                Output level feedback:
+            """
+
+            # Add feedback
+            for feedback_col in feedback_columns:
+                if feedback_col in row_dict:
+                    feedback_value = row_dict[feedback_col]
+                    current_example += f"\n                    {feedback_col}: {feedback_value}"
+
+            examples += current_example + "\n"
+
+        content = content.replace("{examples}", examples)
+
+        # Add annotations
+        if annotations:
+            annotations_text = "\n".join(annotations)
+        else:
+            annotations_text = "No additional annotations."
+
+        content = content.replace("{annotations}", annotations_text)
+
+        return content
+
+    def _format_intent_definition(self, intent: dict) -> str:
+        """
+        Format intent dictionary into readable text for meta-prompt.
+
+        Args:
+            intent: Intent dictionary from IntentExtractor
+
+        Returns:
+            Formatted intent definition string
+        """
+        concept = intent.get("concept", "concept")
+        definition = intent.get("definition", "No definition provided")
+        positive_indicators = intent.get("positive_indicators", [])
+        negative_indicators = intent.get("negative_indicators", [])
+        boundary_cases = intent.get("boundary_cases", [])
+        confidence = intent.get("confidence", 0.0)
+
+        # Format as structured text
+        intent_text = f"""
+**Concept**: {concept}
+
+**User's Definition**:
+{definition}
+
+**Positive Indicators** (classify as TRUE if present):
+"""
+        for ind in positive_indicators:
+            intent_text += f"  - {ind}\n"
+
+        intent_text += "\n**Negative Indicators** (classify as FALSE if present):\n"
+        for ind in negative_indicators:
+            intent_text += f"  - {ind}\n"
+
+        if boundary_cases:
+            intent_text += "\n**Boundary Cases** (edge cases requiring careful consideration):\n"
+            for case in boundary_cases:
+                intent_text += f"  - {case}\n"
+
+        intent_text += f"\n**Intent Extraction Confidence**: {confidence:.2f}\n"
+
+        return intent_text
 
     def format_template_with_vars(
         self,
