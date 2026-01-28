@@ -186,3 +186,98 @@ Core evaluation component - sẽ thay thế simple correctness check trong test.
 - May need LLM assistance for complex reasoning evaluation
 - Can start simple (rule-based) then enhance with LLM if needed
 - Consider adding confidence scores
+
+---
+
+## Implementation Report
+
+### Status: ✅ COMPLETED
+
+### What Was Implemented
+
+1. **TwoStageEvaluator class** (`evaluators/two_stage.py`):
+   - Inherits from BaseEvaluator
+   - Implements separate construction and reasoning evaluation
+   - Configurable weights for each stage (default 50/50)
+   - Returns granular scores and feedback
+
+2. **Construction Evaluation** (`evaluate_construction()` method):
+   - Uses ConstructionExtractor to parse construction XML
+   - Counts 4 sections: entities, state variables, actions, constraints
+   - Score = (sections_present / 4.0)
+   - Generates feedback listing missing sections
+
+3. **Reasoning Evaluation** (`evaluate_reasoning()` method):
+   - Compares prediction with groundtruth
+   - Normalizes values (handles True/False, yes/no, 1/0 variations)
+   - Score = 1.0 if correct, 0.0 if incorrect
+   - Detects structured reasoning flow (Step 1, Step 2, Final)
+
+4. **Overall Scoring**:
+   - Weighted average: `overall = construction_weight * C + reasoning_weight * R`
+   - Default weights: 50% construction, 50% reasoning
+   - Auto-normalizes if weights don't sum to 1.0
+
+### Code Location
+
+**File**: `src/chaos_auto_prompt/evaluators/two_stage.py` (370 lines)
+
+**Key Methods**:
+- `evaluate()`: Main async evaluation method (returns DataFrame + feedback columns)
+- `evaluate_construction()`: Construction quality scoring
+- `evaluate_reasoning()`: Reasoning correctness scoring
+- `_normalize_value()`: Value normalization for comparison
+- `_format_combined_feedback()`: Combines both stages into readable feedback
+
+### Output Schema
+
+```python
+{
+    "construction_score": 0.75,  # 0-1 (3/4 sections present)
+    "construction_feedback": "Construction incomplete. Missing: constraints",
+    "reasoning_score": 1.0,  # 0-1 (correct prediction)
+    "reasoning_feedback": "Reasoning correct. Predicted: True, Expected: True",
+    "overall_score": 0.875,  # Weighted average
+    "overall_correct": True,  # Boolean match
+    "two_stage_feedback": "Overall Score: 0.88 | Construction: 0.75 - ... | Reasoning: 1.00 - ..."
+}
+```
+
+### Testing
+
+Created `tests/unit/test_two_stage_evaluator.py` with **11 test cases**:
+
+✅ All tests passed (11/11):
+1. `test_evaluate_correct_prediction` - Correct prediction scoring
+2. `test_evaluate_incorrect_prediction` - Incorrect prediction scoring
+3. `test_evaluate_with_construction` - Full construction evaluation
+4. `test_evaluate_partial_construction` - Incomplete construction (0.5 score)
+5. `test_evaluate_no_construction` - Missing construction (0.0 score)
+6. `test_evaluate_with_reasoning` - Reasoning text analysis
+7. `test_normalize_value` - Value normalization (True/true/yes/1 → "true")
+8. `test_overall_score_calculation` - Weighted average calculation
+9. `test_weight_normalization` - Auto-normalize weights to sum 1.0
+10. `test_feedback_columns_list` - Returns all 7 feedback columns
+11. `test_batch_evaluation` - Multi-row DataFrame processing
+
+### Design Decisions
+
+1. **Rule-based evaluation**: Started simple without LLM (fast, deterministic)
+2. **Configurable weights**: Allow different importance for construction vs reasoning
+3. **Graceful degradation**: Works with or without construction/reasoning columns
+4. **Comprehensive feedback**: 7 feedback columns for detailed analysis
+5. **Value normalization**: Handles common boolean variations automatically
+
+### Integration
+
+Added to `evaluators/__init__.py`:
+```python
+from chaos_auto_prompt.evaluators.two_stage import TwoStageEvaluator
+__all__ = ["ClassificationEvaluator", "TwoStageEvaluator"]
+```
+
+### Next Steps
+
+Component 2 is complete. Ready to use in:
+- **Component 5**: Update test_optimization.py with 2-stage evaluation
+- **Prompt Optimization**: Use construction/reasoning feedback for better meta-prompting

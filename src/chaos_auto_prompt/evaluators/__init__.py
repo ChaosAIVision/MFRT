@@ -6,5 +6,6 @@ columns for prompt optimization.
 """
 
 from chaos_auto_prompt.evaluators.classification import ClassificationEvaluator
+from chaos_auto_prompt.evaluators.two_stage import TwoStageEvaluator
 
-__all__ = ["ClassificationEvaluator"]
+__all__ = ["ClassificationEvaluator", "TwoStageEvaluator"]
