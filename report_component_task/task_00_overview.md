@@ -63,11 +63,11 @@ graph TD
 | # | Component | Purpose | Input | Output | Dependencies | bd Issue | Status |
 |---|-----------|---------|-------|--------|--------------|----------|--------|
 | 1 | XMLOutputParser | Parse XML tags from LLM output | Raw text, tag_name | Extracted content dict | None | `chaos-auto-prompt-4n7` | ✅ |
-| 2 | ConstructionExtractor | Extract 4 construction elements | Construction text | Structured elements dict | XMLOutputParser | `chaos-auto-prompt-tts` | ⏳ |
-| 3 | ConstructionSimilarityEvaluator | Measure construction similarity | Generated + groundtruth constructions | Similarity score (0-1), feedback | ConstructionExtractor | `chaos-auto-prompt-ro2` | ⏳ |
-| 4 | ReasoningPathEvaluator | Evaluate reasoning logic paths | Reasoning text, answer, paths DB | Quality assessment, recommendation | XMLOutputParser | `chaos-auto-prompt-qja` | ⏳ |
-| 5 | TwoPhaseMetaPrompt | Build 2-phase meta-prompts | Phase, task, examples, feedback | Complete meta-prompt | ConstructionSimilarityEvaluator, ReasoningPathEvaluator | `chaos-auto-prompt-zo9` | ⏳ |
-| 6 | TwoPhaseOptimizer | Orchestrate 2-phase training | Dataset, model, config | Training results, optimized prompts | All above | `chaos-auto-prompt-86c` | ⏳ |
+| 2 | ConstructionExtractor | Extract 4 construction elements | Construction text | Structured elements dict | XMLOutputParser | `chaos-auto-prompt-tts` | ✅ |
+| 3 | ConstructionSimilarityEvaluator | Measure construction similarity | Generated + groundtruth constructions | Similarity score (0-1), feedback | ConstructionExtractor | `chaos-auto-prompt-ro2` | ✅ |
+| 4 | ReasoningPathEvaluator | Evaluate reasoning logic paths | Reasoning text, answer, paths DB | Quality assessment, recommendation | XMLOutputParser | `chaos-auto-prompt-qja` | ✅ |
+| 5 | TwoPhaseMetaPrompt | Build 2-phase meta-prompts | Phase, task, examples, feedback | Complete meta-prompt | ConstructionSimilarityEvaluator, ReasoningPathEvaluator | `chaos-auto-prompt-zo9` | ✅ |
+| 6 | TwoPhaseOptimizer | Orchestrate 2-phase training | Dataset, model, config | Training results, optimized prompts | All above | `chaos-auto-prompt-86c` | ✅ |
 
 ## Overall Architecture
 
