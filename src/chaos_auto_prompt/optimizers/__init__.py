@@ -11,10 +11,12 @@ from .prompt_optimizer import (
     DatasetError,
     ProviderError,
 )
+from .intent_aware_optimizer import IntentAwarePromptOptimizer
 
 __all__ = [
     "MetaPrompt",
     "PromptLearningOptimizer",
+    "IntentAwarePromptOptimizer",
     "OptimizationError",
     "DatasetError",
     "ProviderError",
