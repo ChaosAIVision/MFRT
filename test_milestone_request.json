@@ -1,0 +1,25 @@
+{
+  "dataset_name": "ChaosAIVision/milestone-classification",
+  "dataset_split": "train",
+  "system_prompt_column": "system_prompt",
+  "input_column": "input",
+  "output_column": "output",
+  "evaluators": [
+    {
+      "type": "classification",
+      "feedback_column": "correctness",
+      "model": "gpt-4o-mini",
+      "prompt_template": "Evaluate if this milestone classification is correct.\n\nArticle: {input}\nClassification: {output}\n\nReturn ONLY this JSON format:\n{{\n  \"correctness\": \"correct\",\n  \"explanation\": \"brief reason\"\n}}\n\nIf incorrect, use:\n{{\n  \"correctness\": \"incorrect\",\n  \"explanation\": \"brief reason\"\n}}",
+      "choices": {
+        "correct": 1,
+        "incorrect": 0
+      },
+      "include_explanation": true
+    }
+  ],
+  "model": "gpt-4o-mini",
+  "provider": "openai",
+  "budget": 0.5,
+  "max_samples": 20,
+  "verbose": true
+}

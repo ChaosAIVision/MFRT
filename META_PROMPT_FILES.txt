@@ -1,0 +1,103 @@
+META-PROMPT SYSTEM PORT - FILE STRUCTURE
+==========================================
+
+SOURCE FILES (Original Location):
+----------------------------------
+/home/chaos/Documents/chaos/production/huggingchaos/prompt-learning/optimizer_sdk/
+├── meta_prompt.py          (104 lines)
+└── constants.py            (118 lines)
+
+TARGET FILES (New Location):
+----------------------------
+/home/chaos/Documents/chaos/production/huggingchaos/chaos-auto-prompt/
+├── src/chaos_auto_prompt/
+│   ├── optimizers/
+│   │   ├── __init__.py                 (NEW - exports MetaPrompt)
+│   │   └── meta_prompt.py              (PORTED - 340 lines, enhanced)
+│   ├── config/
+│   │   └── settings.py                 (MODIFIED - added meta-prompt settings)
+│   └── __init__.py                     (MODIFIED - exports MetaPrompt)
+├── examples/
+│   └── meta_prompt_example.py          (NEW - usage examples)
+├── docs/
+│   └── meta_prompt_system.md           (NEW - comprehensive docs)
+└── META_PROMPT_PORT_SUMMARY.md         (NEW - port summary)
+
+CODE MIGRATION DETAILS:
+=======================
+
+1. MetaPrompt Class (meta_prompt.py)
+   - Ported from: optimizer_sdk/meta_prompt.py
+   - Lines: 104 -> 340 (enhanced with docs and type hints)
+   - Changes:
+     * Added comprehensive docstrings
+     * Added type hints (str | None instead of Optional[str])
+     * Integrated with settings system
+     * Removed hardcoded file writing
+     * Added error handling for debug file writes
+
+2. Constants (constants.py -> meta_prompt.py)
+   - START_DELIM, END_DELIM: Now from settings.start_delim, settings.end_delim
+   - META_PROMPT_TEMPLATE: Now DEFAULT_META_PROMPT_TEMPLATE in meta_prompt.py
+   - CODING_AGENT_META_PROMPT_TEMPLATE: Now DEFAULT_CODING_AGENT_META_PROMPT_TEMPLATE
+   - Other constants: Embedded as defaults or removed if unused
+
+3. Settings Integration (settings.py)
+   - Added new configuration section:
+     * meta_prompt_template (optional custom template)
+     * coding_agent_meta_prompt_template (optional custom template)
+     * save_meta_prompt_debug (bool, default False)
+     * meta_prompt_debug_path (str, default "metaprompt_debug.txt")
+
+4. Package Structure
+   - Optimizers module created
+   - MetaPrompt exported at package level
+   - Clean import paths
+
+FEATURE COMPARISON:
+===================
+
+Original Features:
+------------------
+✓ MetaPrompt class
+✓ construct_content() method
+✓ format_template_with_vars() method
+✓ General optimization mode
+✓ Coding agent optimization mode
+✓ Template variable detection
+✓ Delimiter handling
+✓ Always writes debug file to "metaprompt.txt"
+
+New Features:
+-------------
+✓ All original features preserved
+✓ Settings-based configuration
+✓ Optional debug file writing
+✓ Error handling for file I/O
+✓ Comprehensive documentation
+✓ Usage examples
+✓ Type hints throughout
+✓ Modern Python syntax
+✓ Pydantic integration
+✓ Environment variable support
+
+REMOVED:
+--------
+✗ Phoenix-specific dependencies
+✗ Hardcoded file paths
+✗ Unused constants
+✗ Legacy import structure
+
+TESTING:
+========
+✓ Python syntax validation passed
+✓ All imports resolve correctly
+✓ Package structure validated
+✓ Documentation complete
+✓ Examples ready to run
+
+To test the implementation:
+---------------------------
+1. cd /home/chaos/Documents/chaos/production/huggingchaos/chaos-auto-prompt
+2. Configure API keys in .env file
+3. Run: python examples/meta_prompt_example.py
