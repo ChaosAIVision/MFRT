@@ -62,7 +62,7 @@ graph TD
 
 | # | Component | Purpose | Input | Output | Dependencies | bd Issue | Status |
 |---|-----------|---------|-------|--------|--------------|----------|--------|
-| 1 | XMLOutputParser | Parse XML tags from LLM output | Raw text, tag_name | Extracted content dict | None | `chaos-auto-prompt-4n7` | ⏳ |
+| 1 | XMLOutputParser | Parse XML tags from LLM output | Raw text, tag_name | Extracted content dict | None | `chaos-auto-prompt-4n7` | ✅ |
 | 2 | ConstructionExtractor | Extract 4 construction elements | Construction text | Structured elements dict | XMLOutputParser | `chaos-auto-prompt-tts` | ⏳ |
 | 3 | ConstructionSimilarityEvaluator | Measure construction similarity | Generated + groundtruth constructions | Similarity score (0-1), feedback | ConstructionExtractor | `chaos-auto-prompt-ro2` | ⏳ |
 | 4 | ReasoningPathEvaluator | Evaluate reasoning logic paths | Reasoning text, answer, paths DB | Quality assessment, recommendation | XMLOutputParser | `chaos-auto-prompt-qja` | ⏳ |
