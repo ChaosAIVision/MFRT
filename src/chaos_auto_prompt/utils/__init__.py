@@ -8,10 +8,12 @@ from chaos_auto_prompt.utils.xml_parser import (
     extract_construction,
     extract_reasoning,
 )
+from chaos_auto_prompt.utils.construction_extractor import ConstructionExtractor
 
 __all__ = [
     "async_evaluate_dataframe",
     "XMLOutputParser",
     "extract_construction",
     "extract_reasoning",
+    "ConstructionExtractor",
 ]
