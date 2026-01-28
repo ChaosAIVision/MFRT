@@ -9,6 +9,7 @@ from chaos_auto_prompt.utils.xml_parser import (
     extract_reasoning,
 )
 from chaos_auto_prompt.utils.construction_extractor import ConstructionExtractor
+from chaos_auto_prompt.utils.intent_extractor import IntentExtractor
 
 __all__ = [
     "async_evaluate_dataframe",
@@ -16,4 +17,5 @@ __all__ = [
     "extract_construction",
     "extract_reasoning",
     "ConstructionExtractor",
+    "IntentExtractor",
 ]
